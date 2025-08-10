@@ -8,9 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	v1 "github.com/yunjin08/logscale/handlers/v1"
+	"github.com/yunjin08/logscale/routes"
 )
-
-var db *pgxpool.Pool
 
 func main() {
 	err := godotenv.Load()
@@ -23,17 +23,21 @@ func main() {
 		log.Fatal("DATABASE_URL is not set")
 	}
 
-	db, err = pgxpool.New(context.Background(), databaseURL)
+	db, err := pgxpool.New(context.Background(), databaseURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
+	// Initialize handlers
+	logHandler := v1.NewLogHandler(db)
+
+	// Setup Gin router
 	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Hello, World!",
-		})
-	})
+
+	// Setup routes
+	routes.SetupRoutes(r, logHandler)
+
+	log.Println("Starting LogScale API server on :8080")
 	r.Run(":8080")
 }

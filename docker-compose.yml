@@ -1,15 +1,37 @@
 services:
-  db:
-    image: postgres:16
-    restart: always
+  postgres:
+    image: postgres:15-alpine
+    container_name: logscale-postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: logsdb
+      POSTGRES_DB: logscale
+      POSTGRES_USER: logscale
+      POSTGRES_PASSWORD: logscale123
     ports:
       - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logscale -d logscale"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logscale-api
+    environment:
+      DATABASE_URL: postgres://logscale:logscale123@postgres:5432/logscale?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: go run cmd/api/main.go
 
 volumes:
-  db-data:
+  postgres_data:

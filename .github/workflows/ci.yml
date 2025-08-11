@@ -16,11 +16,10 @@ jobs:
     
     env:
       GO_VERSION: '1.24'
-      POSTGRES_VERSION: '15-alpine'
     
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: logscale_test
           POSTGRES_USER: logscale_test
@@ -129,11 +128,10 @@ jobs:
 
     env:
       GO_VERSION: '1.24'
-      POSTGRES_VERSION: '15-alpine'
 
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: logscale_api_test
           POSTGRES_USER: logscale_api_test

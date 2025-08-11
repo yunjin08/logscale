@@ -13,11 +13,10 @@ import (
 )
 
 func main() {
-	// Load .env file if it exists (optional)
-	godotenv.Load()
-
-	// Deliberate linting error for testing
-	unusedVariable := "this will cause a linting error"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
@@ -40,5 +39,8 @@ func main() {
 	routes.SetupRoutes(r, logHandler)
 
 	log.Println("Starting LogScale API server on :8080")
-	r.Run(":8080")
+	err = r.Run(":8080")
+	if err != nil {
+		log.Fatal(err)
+	}
 }

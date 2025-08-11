@@ -13,10 +13,11 @@ import (
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// Load .env file if it exists (optional)
+	godotenv.Load()
+
+	// Deliberate linting error for testing
+	unusedVariable := "this will cause a linting error"
 
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {

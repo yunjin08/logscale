@@ -137,7 +137,8 @@ func TestGetLogs(t *testing.T) {
 	// Check data
 	var logs []models.Log
 	logsData, _ := json.Marshal(response.Data)
-	json.Unmarshal(logsData, &logs)
+	err = json.Unmarshal(logsData, &logs)
+	require.NoError(t, err)
 	assert.Len(t, logs, 1)
 	assert.Equal(t, "test-service", logs[0].Service)
 }

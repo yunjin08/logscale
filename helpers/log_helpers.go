@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -55,7 +56,13 @@ func (h *LogHelper) CreateBatchLogs(ctx context.Context, requests []models.LogRe
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			// Log the rollback error, but don't return it
+			// because we're in a defer function
+			log.Printf("warning: rollback failed: %v\n", err)
+		}
+	}()
 
 	query := `
 		INSERT INTO logs (service, level, message, timestamp, meta)

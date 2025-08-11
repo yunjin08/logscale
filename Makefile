@@ -25,16 +25,19 @@ migrate-sql:
 dev:
 	go run cmd/api/main.go
 
-.PHONY: test test-coverage test-integration
+.PHONY: test test-coverage test-integration lint
+
+lint:
+	golangci-lint run --no-config
 
 test:
 	go test ./test -v
 
-test-coverage:
-	go test ./test -v -cover
-
 test-integration:
 	go test ./test -v -tags=integration
+
+test-coverage:
+	go test ./test -v -cover
 
 clean:
 	docker-compose down -v

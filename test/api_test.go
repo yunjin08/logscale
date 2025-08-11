@@ -134,7 +134,7 @@ func TestGetLogs(t *testing.T) {
 	assert.Equal(t, 1, response.Pagination.Page)
 	assert.Equal(t, 50, response.Pagination.Limit)
 
-	// Check data
+	// Check data ser
 	var logs []models.Log
 	logsData, _ := json.Marshal(response.Data)
 	err = json.Unmarshal(logsData, &logs)

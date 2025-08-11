@@ -3,6 +3,7 @@ up:
 
 down:
 	docker-compose down
+	docker stop $$(docker ps -q --filter "name=logscale") 2>/dev/null || true
 
 build:
 	docker-compose build
@@ -37,4 +38,6 @@ test-integration:
 
 clean:
 	docker-compose down -v
+	docker stop $$(docker ps -q --filter "name=logscale") 2>/dev/null || true
+	docker rm $$(docker ps -aq --filter "name=logscale") 2>/dev/null || true
 	docker system prune -f

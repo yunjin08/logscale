@@ -31,7 +31,7 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
-    command: go run cmd/api/main.go
+    command: ./main
 
 volumes:
   postgres_data:

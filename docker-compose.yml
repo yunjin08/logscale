@@ -3,9 +3,9 @@ services:
     image: postgres:15-alpine
     container_name: logscale-postgres
     environment:
-      POSTGRES_DB: logscale
-      POSTGRES_USER: logscale
-      POSTGRES_PASSWORD: logscale123
+      POSTGRES_DB: ${POSTGRES_DB:-logscale}
+      POSTGRES_USER: ${POSTGRES_USER:-logscale}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile
     container_name: logscale-api
     environment:
-      DATABASE_URL: postgres://logscale:logscale123@postgres:5432/logscale?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-logscale}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-logscale}?sslmode=disable
     ports:
       - "8080:8080"
     depends_on:

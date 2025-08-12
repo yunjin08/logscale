@@ -29,7 +29,6 @@ func main() {
 		log.Printf("error: failed to connect to database: %v", err)
 		os.Exit(1)
 	}
-	defer db.Close()
 
 	// Initialize handlers
 	logHandler := v1.NewLogHandler(db)
@@ -44,6 +43,7 @@ func main() {
 	err = r.Run(":8080")
 	if err != nil {
 		log.Printf("error: failed to start server: %v", err)
+		db.Close() // Close before exit
 		os.Exit(1)
 	}
 }

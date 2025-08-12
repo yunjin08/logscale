@@ -17,8 +17,8 @@ func SetupRoutes(r *gin.Engine, logHandler *v1.LogHandler) {
 		// Logs endpoints
 		logs := v1.Group("/logs")
 		{
-			logs.POST("", logHandler.CreateLog)                                 // POST /v1/logs
-			logs.GET("", pagination.PaginationMiddleware(), logHandler.GetLogs) // GET /v1/logs with pagination
+			logs.POST("", logHandler.CreateLog)                       // POST /v1/logs
+			logs.GET("", pagination.Middleware(), logHandler.GetLogs) // GET /v1/logs with pagination
 		}
 	}
 

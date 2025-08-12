@@ -14,9 +14,12 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
     
+    env:
+      GO_VERSION: '1.24'
+    
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: logscale_test
           POSTGRES_USER: logscale_test
@@ -69,6 +72,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
 
+    env:
+      GO_VERSION: '1.24'
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -93,6 +99,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
 
+    env:
+      GO_VERSION: '1.24'
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -102,14 +111,9 @@ jobs:
       with:
         scan-type: 'fs'
         scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
+        format: 'table'
+        exit-code: '1'
+        severity: 'CRITICAL,HIGH'
 
   # Job 4: API Endpoint Tests
   api-tests:
@@ -117,9 +121,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-test, docker-build]
 
+    env:
+      GO_VERSION: '1.24'
+
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}
+        image: postgres:15-alpine
         env:
           POSTGRES_DB: logscale_api_test
           POSTGRES_USER: logscale_api_test
@@ -142,15 +149,37 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
 
+    - name: Install PostgreSQL client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+
     - name: Start API server
       env:
         DATABASE_URL: postgres://logscale_api_test:api_test_password@localhost:5432/logscale_api_test?sslmode=disable
       run: |
+        # Wait for database to be ready
+        sleep 5
+        
+        # Run database migrations
+        psql postgres://logscale_api_test:api_test_password@localhost:5432/logscale_api_test?sslmode=disable -f deploy/migrations/001_create_logs_table.sql
+        
+        # Start API server
         go run cmd/api/main.go &
         sleep 10
 
     - name: Test API endpoints
       run: |
+        # Wait for server to be ready
+        for i in {1..30}; do
+          if curl -s http://localhost:8080/health > /dev/null; then
+            echo "API server is ready"
+            break
+          fi
+          echo "Waiting for API server... ($i/30)"
+          sleep 2
+        done
+        
         # Test health endpoint
         curl -f http://localhost:8080/health
         

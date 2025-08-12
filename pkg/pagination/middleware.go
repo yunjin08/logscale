@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// PaginationMiddleware extracts pagination parameters from query string
-func PaginationMiddleware() gin.HandlerFunc {
+// Middleware extracts pagination parameters from query string
+func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		pageStr := c.Query("page")
 		limitStr := c.Query("limit")

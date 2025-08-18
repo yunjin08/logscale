@@ -8,19 +8,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/yunjin08/logscale/helpers"
+	"github.com/yunjin08/logscale/internal/stream"
 	"github.com/yunjin08/logscale/models"
 	"github.com/yunjin08/logscale/pkg/pagination"
 )
 
 type LogHandler struct {
-	db     *pgxpool.Pool
-	helper *helpers.LogHelper
+	db        *pgxpool.Pool
+	helper    *helpers.LogHelper
+	streamSvc *stream.RedisStreamService
 }
 
-func NewLogHandler(db *pgxpool.Pool) *LogHandler {
+func NewLogHandler(db *pgxpool.Pool, streamSvc *stream.RedisStreamService) *LogHandler {
 	return &LogHandler{
-		db:     db,
-		helper: helpers.NewLogHelper(db),
+		db:        db,
+		helper:    helpers.NewLogHelper(db),
+		streamSvc: streamSvc,
 	}
 }
 
@@ -44,6 +47,17 @@ func (h *LogHandler) CreateLog(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
+		// Publish to Redis Stream (async)
+		go func() {
+			if h.streamSvc != nil {
+				if err := h.streamSvc.PublishLogEvent(context.Background(), *log); err != nil {
+					// Log error but don't fail the request
+					c.Error(err)
+				}
+			}
+		}()
+
 		c.JSON(http.StatusCreated, log)
 		return
 	}
@@ -59,6 +73,18 @@ func (h *LogHandler) CreateLog(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Publish batch to Redis Stream (async)
+	go func() {
+		if h.streamSvc != nil {
+			for _, log := range logs {
+				if err := h.streamSvc.PublishLogEvent(context.Background(), log); err != nil {
+					// Log error but don't fail the request
+					c.Error(err)
+				}
+			}
+		}
+	}()
 
 	c.JSON(http.StatusCreated, gin.H{"logs": logs, "count": len(logs)})
 }

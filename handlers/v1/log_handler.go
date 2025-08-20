@@ -53,7 +53,7 @@ func (h *LogHandler) CreateLog(c *gin.Context) {
 			if h.streamSvc != nil {
 				if err := h.streamSvc.PublishLogEvent(context.Background(), *log); err != nil {
 					// Log error but don't fail the request
-					c.Error(err)
+					_ = c.Error(err) // Ignore error return from c.Error
 				}
 			}
 		}()
@@ -80,7 +80,7 @@ func (h *LogHandler) CreateLog(c *gin.Context) {
 			for _, log := range logs {
 				if err := h.streamSvc.PublishLogEvent(context.Background(), log); err != nil {
 					// Log error but don't fail the request
-					c.Error(err)
+					_ = c.Error(err) // Ignore error return from c.Error
 				}
 			}
 		}

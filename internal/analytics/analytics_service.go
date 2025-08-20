@@ -30,7 +30,11 @@ func (a *AnalyticsService) UpdateServiceMetrics(ctx context.Context, event model
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+			log.Printf("DEBUG: Failed to rollback transaction: %v", rollbackErr)
+		}
+	}()
 
 	// Try to get existing metrics
 	var metrics models.ServiceMetrics
@@ -79,14 +83,12 @@ func (a *AnalyticsService) UpdateServiceMetrics(ctx context.Context, event model
 		metrics.DebugCount++
 	}
 
-	// Calculate error rate
 	if metrics.TotalLogs > 0 {
 		metrics.ErrorRate = float64(metrics.ErrorCount) / float64(metrics.TotalLogs)
 	}
 
 	// Insert or update metrics
 	if metrics.ID == 0 {
-		// Insert new record
 		err = tx.QueryRow(ctx, `
 			INSERT INTO service_metrics (service, total_logs, error_count, warning_count, info_count, debug_count, error_rate, last_log_time, created_at, updated_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -95,7 +97,6 @@ func (a *AnalyticsService) UpdateServiceMetrics(ctx context.Context, event model
 			metrics.InfoCount, metrics.DebugCount, metrics.ErrorRate, metrics.LastLogTime,
 			metrics.CreatedAt, metrics.UpdatedAt).Scan(&metrics.ID)
 	} else {
-		// Update existing record
 		_, err = tx.Exec(ctx, `
 			UPDATE service_metrics 
 			SET total_logs = $1, error_count = $2, warning_count = $3, info_count = $4, 

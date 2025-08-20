@@ -116,7 +116,9 @@ func (w *Worker) processEvents(ctx context.Context) error {
 			if err != nil {
 				log.Printf("Failed to process event %s: %v", message.ID, err)
 				// Acknowledge the message to prevent reprocessing
-				w.acknowledgeMessage(ctx, message.ID)
+				if ackErr := w.acknowledgeMessage(ctx, message.ID); ackErr != nil {
+					log.Printf("Failed to acknowledge failed message %s: %v", message.ID, ackErr)
+				}
 				continue
 			}
 

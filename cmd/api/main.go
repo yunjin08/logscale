@@ -30,7 +30,6 @@ func main() {
 		log.Printf("error: failed to connect to database: %v", err)
 		os.Exit(1)
 	}
-	// Note: No defer here since we exit on errors
 
 	// Initialize Redis Stream service (optional)
 	var streamSvc *stream.RedisStreamService
@@ -45,10 +44,13 @@ func main() {
 		streamSvc, err = stream.NewRedisStreamService(redisURL, streamName)
 		if err != nil {
 			log.Printf("warning: failed to initialize Redis stream service: %v", err)
-			// Continue without Redis - it's optional
+			log.Printf("continuing without Redis stream functionality")
+			streamSvc = nil // Reset to nil on failure
 		} else {
 			log.Printf("Redis stream service initialized with stream: %s", streamName)
 		}
+	} else {
+		log.Printf("REDIS_URL not provided, running without Redis stream functionality")
 	}
 
 	// Initialize handlers

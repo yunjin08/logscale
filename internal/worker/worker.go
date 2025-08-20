@@ -16,7 +16,7 @@ import (
 // Worker processes events from Redis Streams
 type Worker struct {
 	redisClient   *redis.Client
-	analyticsSvc  *analytics.AnalyticsService
+	analyticsSvc  *analytics.Service
 	streamName    string
 	consumerGroup string
 	consumerName  string
@@ -25,7 +25,7 @@ type Worker struct {
 }
 
 // NewWorker creates a new worker instance
-func NewWorker(redisURL string, analyticsSvc *analytics.AnalyticsService, streamName string) (*Worker, error) {
+func NewWorker(redisURL string, analyticsSvc *analytics.Service, streamName string) (*Worker, error) {
 	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Redis URL: %w", err)

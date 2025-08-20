@@ -43,15 +43,15 @@ func main() {
 		log.Printf("error: failed to connect to database: %v", err)
 		os.Exit(1)
 	}
-	defer db.Close()
 
 	// Initialize analytics service
-	analyticsSvc := analytics.NewAnalyticsService(db)
+	analyticsSvc := analytics.NewService(db)
 
 	// Initialize worker
 	worker, err := worker.NewWorker(redisURL, analyticsSvc, streamName)
 	if err != nil {
 		log.Printf("error: failed to create worker: %v", err)
+		db.Close()
 		os.Exit(1)
 	}
 	defer worker.Close()

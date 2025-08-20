@@ -12,20 +12,20 @@ import (
 	"github.com/yunjin08/logscale/models"
 )
 
-// AnalyticsService handles metrics aggregation and storage
-type AnalyticsService struct {
+// Service handles metrics aggregation and storage
+type Service struct {
 	db *pgxpool.Pool
 }
 
-// NewAnalyticsService creates a new analytics service
-func NewAnalyticsService(db *pgxpool.Pool) *AnalyticsService {
-	return &AnalyticsService{
+// NewService creates a new analytics service
+func NewService(db *pgxpool.Pool) *Service {
+	return &Service{
 		db: db,
 	}
 }
 
 // UpdateServiceMetrics updates or creates service metrics based on a log event
-func (a *AnalyticsService) UpdateServiceMetrics(ctx context.Context, event models.LogEvent) error {
+func (a *Service) UpdateServiceMetrics(ctx context.Context, event models.LogEvent) error {
 	tx, err := a.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -120,7 +120,7 @@ func (a *AnalyticsService) UpdateServiceMetrics(ctx context.Context, event model
 }
 
 // GetServiceMetrics retrieves metrics for a specific service
-func (a *AnalyticsService) GetServiceMetrics(ctx context.Context, service string) (*models.ServiceMetrics, error) {
+func (a *Service) GetServiceMetrics(ctx context.Context, service string) (*models.ServiceMetrics, error) {
 	var metrics models.ServiceMetrics
 	err := a.db.QueryRow(ctx, `
 		SELECT id, service, total_logs, error_count, warning_count, info_count, debug_count, 
@@ -144,7 +144,7 @@ func (a *AnalyticsService) GetServiceMetrics(ctx context.Context, service string
 }
 
 // GetAllServiceMetrics retrieves metrics for all services
-func (a *AnalyticsService) GetAllServiceMetrics(ctx context.Context) ([]models.ServiceMetrics, error) {
+func (a *Service) GetAllServiceMetrics(ctx context.Context) ([]models.ServiceMetrics, error) {
 	rows, err := a.db.Query(ctx, `
 		SELECT id, service, total_logs, error_count, warning_count, info_count, debug_count, 
 		       error_rate, last_log_time, created_at, updated_at

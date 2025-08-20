@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	v1 "github.com/yunjin08/logscale/handlers/v1"
+	"github.com/yunjin08/logscale/internal/stream"
 	"github.com/yunjin08/logscale/routes"
 )
 
@@ -30,8 +31,30 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize Redis Stream service (optional)
+	var streamSvc *stream.RedisStreamService
+	redisURL := os.Getenv("REDIS_URL")
+
+	if redisURL != "" {
+		streamName := os.Getenv("STREAM_NAME")
+		if streamName == "" {
+			streamName = "logscale:logs"
+		}
+
+		streamSvc, err = stream.NewRedisStreamService(redisURL, streamName)
+		if err != nil {
+			log.Printf("warning: failed to initialize Redis stream service: %v", err)
+			log.Printf("continuing without Redis stream functionality")
+			streamSvc = nil // Reset to nil on failure
+		} else {
+			log.Printf("Redis stream service initialized with stream: %s", streamName)
+		}
+	} else {
+		log.Printf("REDIS_URL not provided, running without Redis stream functionality")
+	}
+
 	// Initialize handlers
-	logHandler := v1.NewLogHandler(db)
+	logHandler := v1.NewLogHandler(db, streamSvc)
 
 	// Setup Gin router
 	r := gin.Default()

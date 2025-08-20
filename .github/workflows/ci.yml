@@ -138,6 +138,16 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
     - name: Checkout code
@@ -157,12 +167,15 @@ jobs:
     - name: Start API server
       env:
         DATABASE_URL: postgres://logscale_api_test:api_test_password@localhost:5432/logscale_api_test?sslmode=disable
+        REDIS_URL: redis://localhost:6379
+        STREAM_NAME: logscale:logs
       run: |
         # Wait for database to be ready
         sleep 5
         
-        # Run database migrations
-        psql postgres://logscale_api_test:api_test_password@localhost:5432/logscale_api_test?sslmode=disable -f deploy/migrations/001_create_logs_table.sql
+        # Run database migrations using migrate tool
+        go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+        migrate -path db/migrations -database "postgres://logscale_api_test:api_test_password@localhost:5432/logscale_api_test?sslmode=disable" up
         
         # Start API server
         go run cmd/api/main.go &

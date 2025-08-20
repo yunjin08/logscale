@@ -10,12 +10,25 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./deploy/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U logscale -d logscale"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: logscale-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
 
   api:
     build:
@@ -24,14 +37,33 @@ services:
     container_name: logscale-api
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-logscale}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-logscale}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      STREAM_NAME: logscale:logs
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - .:/app
-    command: ./main
+      redis:
+        condition: service_healthy
+    command: ["./api"]
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logscale-worker
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-logscale}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-logscale}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      STREAM_NAME: logscale:logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["./worker"]
 
 volumes:
   postgres_data:
+  redis_data:

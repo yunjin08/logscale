@@ -11,19 +11,28 @@ build:
 logs:
 	docker-compose logs -f
 
+# Database migrations
 migrate-up:
-	docker run --rm -v $(PWD)/deploy/migrations:/migrations --network logscale_default migrate/migrate -path=/migrations -database "postgres://logscale:logscale123@postgres:5432/logscale?sslmode=disable" up
+	docker run --rm -v $(PWD)/db/migrations:/migrations --network logscale_default migrate/migrate -path=/migrations -database "postgres://logscale:logscale123@postgres:5432/logscale?sslmode=disable" up
 
 migrate-down:
-	docker run --rm -v $(PWD)/deploy/migrations:/migrations --network logscale_default migrate/migrate -path=/migrations -database "postgres://logscale:logscale123@postgres:5432/logscale?sslmode=disable" down 1
+	docker run --rm -v $(PWD)/db/migrations:/migrations --network logscale_default migrate/migrate -path=/migrations -database "postgres://logscale:logscale123@postgres:5432/logscale?sslmode=disable" down 1
 
-# Alternative: Run migrations directly in the postgres container
-migrate-sql:
-	docker-compose exec postgres psql -U logscale -d logscale -f /docker-entrypoint-initdb.d/001_create_logs_table.sql
+migrate-force:
+	docker run --rm -v $(PWD)/db/migrations:/migrations --network logscale_default migrate/migrate -path=/migrations -database "postgres://logscale:logscale123@postgres:5432/logscale?sslmode=disable" force $(version)
+
+migrate-version:
+	docker run --rm -v $(PWD)/db/migrations:/migrations --network logscale_default migrate/migrate -path=/migrations -database "postgres://logscale:logscale123@postgres:5432/logscale?sslmode=disable" version
+
+migrate-create:
+	migrate create -ext sql -dir db/migrations -seq $(name)
 
 # Development commands
 dev:
 	go run cmd/api/main.go
+
+dev-worker:
+	go run cmd/worker/main.go
 
 .PHONY: test test-coverage test-integration lint
 
